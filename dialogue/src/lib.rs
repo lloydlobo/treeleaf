@@ -18,7 +18,7 @@ use uuid::Uuid;
 pub use crate::binary_tree::BinaryTree;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
-    let tree: Option<DialogueConfig> = match init_dialogue_config() {
+    let tree = match init_dialogue_config() {
         Ok(None) => {
             println!("Aborted.");
             None
@@ -33,6 +33,12 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         }
     };
 
+    playground(tree)?;
+
+    Ok(())
+}
+
+fn playground(tree: Option<DialogueConfig>) -> Result<(), Box<dyn Error>> {
     let tree: DialogueConfig = match tree {
         Some(v) => v,
         None => std::process::exit(2),
@@ -40,7 +46,6 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let (root, mut rest) = (tree.root_node, tree.rest_nodes.unwrap());
     rest.insert(0, root);
 
-    // let data = vec![(0, 10), (2, 12), (3, 13), (0, 20), (3, 33), (2, 42)];
     let uuid = Uuid::new_v4();
 
     // ITERTOOLS
