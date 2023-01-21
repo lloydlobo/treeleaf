@@ -20,22 +20,35 @@ lazy_static! {
 pub use crate::binary_tree::BinaryTree;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
-    let _tree: Option<DialogueConfig> = match DialogueConfig::default().init_dialogue_config() {
-        Ok(None) => {
-            println!("Aborted.");
-            None
-        }
-        Ok(Some(config)) => {
-            println!("{:?}", config);
-            Some(config)
-        }
-        Err(err) => {
-            println!("error: {}", err);
-            None
-        }
-    };
+    let dialogue_cfg: Option<DialogueConfig> =
+        match DialogueConfig::default().init_dialogue_config() {
+            Ok(None) => {
+                println!("Aborted.");
+                None
+            }
+            Ok(Some(config)) => {
+                println!("{:?}", config);
+                Some(config)
+            }
+            Err(err) => {
+                println!("error: {}", err);
+                None
+            }
+        };
 
-    //TODO: draft::playground(tree)?;
+    let dialogue_cfg = if let Some(x) = dialogue_cfg { x } else { DialogueConfig::default() };
+
+    let vec_nodes = dialogue_cfg.rest_nodes.unwrap();
+    let mut rest = vec_nodes.iter().map(|x| x.node.as_str()).collect::<Vec<_>>();
+    let root = dialogue_cfg.root_node.node.as_str();
+    rest.insert(0, root);
+    let vec = rest.clone();
+    // let tree = BinaryTree::new(&root);
+    let tree = BinaryTree::from_vec(&vec);
+    println!("{:#?}", &tree);
+
+    //TODO: A Parse binary tree to mermaid-diagram.
+    //TODO: B draft::playground(tree)?;
     Ok(())
 }
 
@@ -46,12 +59,13 @@ enum Nodes {
 
 // #[derive(Debug, Serialize, Deserialize)]
 // struct DialogueNode(u32, String, String);
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct DialogueNode {
     index: u32,
     uuid: String,
     node: String,
 }
+
 struct ChildPatUuid<'a> {
     child: &'a str,
     pat: Option<char>,
