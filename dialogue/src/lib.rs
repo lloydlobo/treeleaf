@@ -81,6 +81,20 @@ struct ChildUuid<'a> {
     uuid: ChildPatUuid<'a>,
 }
 
+/// ```json
+/// {
+///     "total_nodes": 7,
+///     "root_node": { "index": 0, "uuid": "63d5b897-a6cd-4167-b303-65cdd6402629", "node": "A" },
+///     "rest_nodes": [
+///         { "index": 1, "uuid": "22e40956-0d56-4914-8826-03b9a349a949", "node": "B" },
+///         { "index": 2, "uuid": "30b74bd8-1b0f-4b6f-9e0b-247472b03c2a", "node": "C" },
+///         { "index": 3, "uuid": "5ba79ee7-efd6-494d-a3a3-617a88740ce2", "node": "D" },
+///         { "index": 4, "uuid": "de4fde64-af50-40dd-b431-fe286e963d15", "node": "E" },
+///         { "index": 5, "uuid": "2f5ff480-b36d-42b3-bbab-f8ae99d4f332", "node": "F" },
+///         { "index": 6, "uuid": "30e98c6a-d4c3-4d31-bbf5-52b4394c1d03", "node": "G" }
+///     ]
+/// }
+/// ```
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DialogueConfig {
     total_nodes: u32,

@@ -2,6 +2,21 @@ use std::collections::VecDeque;
 
 use serde::{Deserialize, Serialize};
 
+/// ```json
+/// {
+///     "value": "A",
+///     "left": {
+///         "value": "B",
+///         "left": { "value": "D", "left": null, "right": null },
+///         "right": { "value": "E", "left": null, "right": null }
+///     },
+///     "right": {
+///         "value": "C",
+///         "left": { "value": "F", "left": null, "right": null },
+///         "right": { "value": "G", "left": null, "right": null }
+///     }
+/// }
+/// ```
 /// [Source](https://hackernoon.com/how-to-insert-binary-tree-in-rust)
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct BinaryTree<T> {
