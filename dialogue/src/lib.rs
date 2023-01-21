@@ -1,8 +1,19 @@
+#![allow(unused)]
+#![feature(const_trait_impl)]
+
 mod binary_tree;
-use std::{error::Error, net::IpAddr};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    hash::Hasher,
+    net::IpAddr,
+    ops::Index,
+};
 
 use console::Style;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, MultiSelect, Select, Sort};
+use itertools::Itertools;
+use uuid::Uuid;
 
 pub use crate::binary_tree::BinaryTree;
 
@@ -29,18 +40,75 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let (root, mut rest) = (tree.root_node, tree.rest_nodes.unwrap());
     rest.insert(0, root);
 
-    let mut values = Values::new(rest);
-    values.multi_select();
-    values.sort();
+    // let data = vec![(0, 10), (2, 12), (3, 13), (0, 20), (3, 33), (2, 42)];
+    let uuid = Uuid::new_v4();
+
+    // ITERTOOLS
+    let hashmap_group =
+        rest.iter().enumerate().map(|(k, v)| (k as u64, (uuid, v))).into_group_map();
+    dbg!(hashmap_group);
+
     Ok(())
 }
 
+// nodes from hashmap
+// let mut node = PrimitiveNode { node: rest[0].clone(), index: 0 };
+// let nodes: Vec<PrimitiveNode> = rest .iter() .enumerate() .map(|(index, node)| PrimitiveNode
+// { node: node.clone(), index }) .collect(); let mut map = HashMap::new();
+// for node in nodes { map.insert(node.node, node.index); }
+// let node_map = PrimitiveNodeMap(map);
+
+// values
+// let mut nodes = PrimitiveNodeVec::new(rest);
+// nodes.multi_select();
+// nodes.sort();
+/* //  (PrimitiveNode::new("Einar", "Norway"), 25),
+//  (Viking::new("Olaf", "Denmark"), 24),
+//  (Viking::new("Harald", "Iceland"), 12),
+#[derive(Hash, Eq, PartialEq, Debug)]
+struct PrimitiveNode {
+    node: String,
+    index: usize,
+}
+
+// To make something the key of a HashMap, you need to satisfy 3 traits:
+// Hash — How do you calculate a hash value for the type?
+// PartialEq — How do you decide if two instances of a type are the same?
+// Eq — Can you guarantee that the equality is reflexive, symmetric, and transitive? This requires
+// PartialEq. This is based on the definition of HashMap:
+// #[derive(Hash, Eq, PartialEq, Debug)]
 #[derive(Debug)]
-struct Values {
+struct PrimitiveNodeMap<T, U>(HashMap<T, U>);
+
+impl<T, U> Eq for PrimitiveNodeMap<T, U>
+where
+    T: std::cmp::Eq + std::hash::Hash,
+    U: std::cmp::PartialEq + std::hash::Hash,
+{
+    fn assert_receiver_is_total_eq(&self) {}
+}
+
+impl<T, U> PartialEq for PrimitiveNodeMap<T, U>
+where
+    T: std::cmp::Eq + std::hash::Hash,
+    U: std::cmp::PartialEq + std::hash::Hash,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+} */
+
+// impl<T, U> std::hash::Hash for PrimitiveNodeMap<T, U> { fn hash<H>(&self, state: &mut H) where H:
+// ~const Hasher, { self.map.hash(state); } }
+// struct Wrapper<T>(HashSet<T>);
+// struct Wrapper<T, U>(HashMap<T, U>);
+
+#[derive(Debug)]
+struct PrimitiveNodeVec {
     vec: Vec<String>,
 }
 
-impl Values {
+impl PrimitiveNodeVec {
     fn new(vec: Vec<String>) -> Self {
         Self { vec }
     }
@@ -108,6 +176,7 @@ pub fn init_dialogue_config() -> Result<Option<DialogueConfig>, Box<dyn Error>> 
     // let vec = &[2, 3, 4, 5, 6];
     let mut children = Vec::new();
     for i in 1..total_nodes {
+        // let uuid = Uuid::new_v4();
         match i % 2 == 0 {
             true => {
                 let child_node: String = Input::with_theme(&theme)
