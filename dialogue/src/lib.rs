@@ -46,6 +46,11 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // let tree = BinaryTree::new(&root);
     let tree = BinaryTree::from_vec(&vec);
     println!("{:#?}", &tree);
+    {
+        let path = "tree.json";
+        let mut file = File::create(path)?;
+        serde_json::to_writer(&mut file, &tree)?;
+    }
 
     //TODO: A Parse binary tree to mermaid-diagram.
     //TODO: B draft::playground(tree)?;

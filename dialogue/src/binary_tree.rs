@@ -1,7 +1,9 @@
 use std::collections::VecDeque;
 
+use serde::{Deserialize, Serialize};
+
 /// [Source](https://hackernoon.com/how-to-insert-binary-tree-in-rust)
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct BinaryTree<T> {
     pub value: T,
     pub left: Option<Box<BinaryTree<T>>>,
