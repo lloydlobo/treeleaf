@@ -1,30 +1,32 @@
-#![allow(unused)]
+// #![allow(unused)]
 #![feature(const_trait_impl)]
 
+#[macro_use]
+extern crate lazy_static;
+
 mod binary_tree;
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-    hash::Hasher,
-    net::IpAddr,
-    ops::Index,
-};
+use std::{error::Error, fs::File};
 
 use console::Style;
-use dialoguer::{theme::ColorfulTheme, Confirm, Input, MultiSelect, Select, Sort};
-use itertools::Itertools;
+use dialoguer::{theme::ColorfulTheme, Confirm, Input};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+lazy_static! {
+    static ref THEME: ColorfulTheme = ColorfulTheme::default();
+    static ref CONFIG_FILE_PATH: &'static str = "config.json";
+}
 
 pub use crate::binary_tree::BinaryTree;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
-    let tree = match init_dialogue_config() {
+    let _tree: Option<DialogueConfig> = match DialogueConfig::default().init_dialogue_config() {
         Ok(None) => {
             println!("Aborted.");
             None
         }
         Ok(Some(config)) => {
-            println!("{:#?}", config);
+            println!("{:?}", config);
             Some(config)
         }
         Err(err) => {
@@ -33,238 +35,346 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    playground(tree)?;
-
+    //TODO: draft::playground(tree)?;
     Ok(())
 }
 
-fn playground(tree: Option<DialogueConfig>) -> Result<(), Box<dyn Error>> {
-    let tree: DialogueConfig = match tree {
-        Some(v) => v,
-        None => std::process::exit(2),
-    };
-    let (root, mut rest) = (tree.root_node, tree.rest_nodes.unwrap());
-    rest.insert(0, root);
-
-    let uuid = Uuid::new_v4();
-
-    // ITERTOOLS
-    let hashmap_group =
-        rest.iter().enumerate().map(|(k, v)| (k as u64, (uuid, v))).into_group_map();
-    dbg!(hashmap_group);
-
-    Ok(())
+enum Nodes {
+    Root,
+    Child,
 }
 
-// nodes from hashmap
-// let mut node = PrimitiveNode { node: rest[0].clone(), index: 0 };
-// let nodes: Vec<PrimitiveNode> = rest .iter() .enumerate() .map(|(index, node)| PrimitiveNode
-// { node: node.clone(), index }) .collect(); let mut map = HashMap::new();
-// for node in nodes { map.insert(node.node, node.index); }
-// let node_map = PrimitiveNodeMap(map);
-
-// values
-// let mut nodes = PrimitiveNodeVec::new(rest);
-// nodes.multi_select();
-// nodes.sort();
-/* //  (PrimitiveNode::new("Einar", "Norway"), 25),
-//  (Viking::new("Olaf", "Denmark"), 24),
-//  (Viking::new("Harald", "Iceland"), 12),
-#[derive(Hash, Eq, PartialEq, Debug)]
-struct PrimitiveNode {
+// #[derive(Debug, Serialize, Deserialize)]
+// struct DialogueNode(u32, String, String);
+#[derive(Debug, Serialize, Deserialize)]
+struct DialogueNode {
+    index: u32,
+    uuid: String,
     node: String,
-    index: usize,
+}
+struct ChildPatUuid<'a> {
+    child: &'a str,
+    pat: Option<char>,
+    uuid: Uuid,
+}
+struct ChildUuid<'a> {
+    child: String,
+    uuid: ChildPatUuid<'a>,
 }
 
-// To make something the key of a HashMap, you need to satisfy 3 traits:
-// Hash — How do you calculate a hash value for the type?
-// PartialEq — How do you decide if two instances of a type are the same?
-// Eq — Can you guarantee that the equality is reflexive, symmetric, and transitive? This requires
-// PartialEq. This is based on the definition of HashMap:
-// #[derive(Hash, Eq, PartialEq, Debug)]
-#[derive(Debug)]
-struct PrimitiveNodeMap<T, U>(HashMap<T, U>);
-
-impl<T, U> Eq for PrimitiveNodeMap<T, U>
-where
-    T: std::cmp::Eq + std::hash::Hash,
-    U: std::cmp::PartialEq + std::hash::Hash,
-{
-    fn assert_receiver_is_total_eq(&self) {}
-}
-
-impl<T, U> PartialEq for PrimitiveNodeMap<T, U>
-where
-    T: std::cmp::Eq + std::hash::Hash,
-    U: std::cmp::PartialEq + std::hash::Hash,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-} */
-
-// impl<T, U> std::hash::Hash for PrimitiveNodeMap<T, U> { fn hash<H>(&self, state: &mut H) where H:
-// ~const Hasher, { self.map.hash(state); } }
-// struct Wrapper<T>(HashSet<T>);
-// struct Wrapper<T, U>(HashMap<T, U>);
-
-#[derive(Debug)]
-struct PrimitiveNodeVec {
-    vec: Vec<String>,
-}
-
-impl PrimitiveNodeVec {
-    fn new(vec: Vec<String>) -> Self {
-        Self { vec }
-    }
-
-    fn multi_select(&mut self) {
-        let defaults: Vec<bool> = Vec::with_capacity(self.vec.len()); // all false OR not selected.
-        let selections = MultiSelect::with_theme(&ColorfulTheme::default())
-            .with_prompt("Pick your food")
-            .items(&self.vec[..])
-            .defaults(&defaults[..])
-            .interact()
-            .unwrap();
-
-        if selections.is_empty() {
-            println!("You did not select anything :(");
-        } else {
-            println!("You selected these things:");
-            for selection in selections {
-                println!("  {}", self.vec[selection]);
-            }
-        }
-    }
-
-    // ["root", "left", "right"]
-    // [0 , 1, 2]
-    // Just use HashMap?
-    fn sort(&mut self) {
-        let idx: Vec<usize> = Vec::with_capacity(self.vec.len());
-        dbg!(&idx);
-        let sorted_idx: Vec<usize> = Sort::with_theme(&ColorfulTheme::default())
-            .with_prompt("Order your foods by preference")
-            .items(&self.vec[..])
-            .interact()
-            .unwrap();
-        dbg!(&sorted_idx);
-
-        // println!("Your favorite item:");
-        // println!("  {}", self.vec[sorted[0]]);
-        // println!("Your least favorite item:");
-        // println!("  {}", self.vec[sorted[sorted.len() - 1]]);
-    }
-}
-
-#[derive(Debug)]
-#[allow(dead_code)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DialogueConfig {
-    total_node: u32,
-    root_node: String,
-    rest_nodes: Option<Vec<String>>,
+    total_nodes: u32,
+    root_node: DialogueNode,
+    rest_nodes: Option<Vec<DialogueNode>>,
 }
 
-pub fn init_dialogue_config() -> Result<Option<DialogueConfig>, Box<dyn Error>> {
-    let theme =
-        ColorfulTheme { values_style: Style::new().yellow().dim(), ..ColorfulTheme::default() };
-    println!("Welcome to the binary tree setup wizard");
+impl Default for DialogueConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
-    let total_nodes: u32 =
-        Input::with_theme(&theme).with_prompt("total_nodes").default(3).interact()?;
+impl DialogueConfig {
+    fn get_child_details(uuid: Uuid, i: u32) -> ChildUuid<'static> {
+        let which_child = |side: &'static str| ChildUuid {
+            child: side.to_string(),
+            uuid: ChildPatUuid { child: side, pat: Some('-'), uuid },
+        };
+        let left_or_right = match i % 2 != 0 {
+            true => which_child("left"),
+            false => which_child("right"),
+        };
+        left_or_right
+    }
 
-    let root_node: String = Input::with_theme(&theme)
-        .with_prompt("root_node")
-        .default("root".to_string())
-        .interact()?;
+    pub fn init_dialogue_config(mut self) -> Result<Option<DialogueConfig>, Box<dyn Error>> {
+        const ROOT_IDX: u32 = 0;
+        let theme = Self::theme();
+        println!("Welcome to the binary tree setup wizard");
 
-    // let vec = &[2, 3, 4, 5, 6];
-    let mut children = Vec::new();
-    for i in 1..total_nodes {
-        // let uuid = Uuid::new_v4();
-        match i % 2 == 0 {
-            true => {
-                let child_node: String = Input::with_theme(&theme)
-                    .with_prompt(format!(
-                        r#".
-root: {}
-rest: {:?}
-Enter left_node: "#,
-                        root_node, children
-                    ))
-                    .default("left".to_string())
-                    .interact()?;
-                children.push(child_node);
-            }
-            false => {
-                let child_node: String = Input::with_theme(&theme)
-                    .with_prompt(format!(
-                        r#".
-root: {}
-rest: {:?}
-Enter right_node: "#,
-                        root_node, children
-                    ))
-                    .default("left".to_string())
-                    .interact()?;
-                children.push(child_node);
-            }
+        // loop{ }
+        self.total_nodes = Input::with_theme(&theme)
+            .with_prompt("total_nodes")
+            .default(self.total_nodes)
+            .interact()?;
+
+        let uuid: Uuid = Uuid::new_v4();
+        let root_node = Input::with_theme(&theme)
+            .with_prompt("root_node")
+            .default(Self::parse_default_node(ChildPatUuid {
+                child: "root",
+                pat: Some('-'),
+                uuid,
+            })?)
+            .interact()?;
+
+        let mut children: Vec<DialogueNode> = Vec::new();
+        for i in (ROOT_IDX + 1)..self.total_nodes {
+            let display_prev: &String = match i {
+                1 => &root_node,
+                _ => &children[i as usize - 2].node,
+            };
+
+            let uuid = Uuid::new_v4();
+            let details = Self::get_child_details(uuid, i);
+            let child_node = Input::with_theme(&theme)
+                .with_prompt(format!(
+                    ".\nroot: {}\nrest: {:?}\nEnter {}_node: ",
+                    root_node, display_prev, details.child
+                ))
+                .default(Self::parse_default_node(details.uuid)?)
+                .interact()?;
+            children.push(DialogueNode { index: i, uuid: uuid.to_string(), node: child_node });
+        }
+
+        // Maybe use a loop to let the user redo from start?
+        if !Confirm::with_theme(&theme).with_prompt("Save progress").default(true).interact()? {
+            return Ok(None);
+        }
+
+        self.root_node = DialogueNode { index: ROOT_IDX, uuid: uuid.to_string(), node: root_node };
+        self.rest_nodes = Some(children);
+
+        self.print_to_config_file(*CONFIG_FILE_PATH)?;
+
+        Ok(Some(self))
+    }
+
+    /// Creates a new [`DialogueConfig`].
+    pub fn new() -> Self {
+        Self {
+            total_nodes: 3,
+            root_node: DialogueNode { index: 0, uuid: String::new(), node: String::new() },
+            rest_nodes: None,
         }
     }
-    // if !Confirm::with_theme(&theme).with_prompt("Add more child_nodes").interact()? {
-    //     return Ok(None);
+
+    /// .
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if .
+    fn parse_default_node<'a>(cpu: ChildPatUuid<'a>) -> Result<String, Box<dyn Error>> {
+        let pat = if let Some(p) = cpu.pat { p } else { '-' };
+
+        let uuid = cpu.uuid.to_string();
+        let uuid =
+            if let Some(it) = uuid.split('-').collect::<Vec<_>>().first() { it } else { cpu.child };
+        Ok(format!("{}{}{}", cpu.child, pat, uuid))
+    }
+
+    //PERF: Use tempfile?
+    fn print_to_config_file<P>(&self, path: P) -> Result<(), Box<dyn Error>>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        let mut file = File::create(path)?;
+        serde_json::to_writer(&mut file, &self)?;
+        Ok(())
+    }
+
+    fn theme() -> ColorfulTheme {
+        ColorfulTheme { values_style: Style::new().yellow().dim(), ..ColorfulTheme::default() }
+    }
+}
+
+#[allow(unused)]
+mod draft {
+    use std::error::Error;
+
+    use dialoguer::{theme::ColorfulTheme, Confirm, Input, MultiSelect, Select, Sort};
+    use itertools::Itertools;
+    use uuid::Uuid;
+
+    use crate::DialogueConfig;
+
+    pub fn playground(tree: Option<DialogueConfig>) -> Result<(), Box<dyn Error>> {
+        let tree: DialogueConfig = match tree {
+            Some(v) => v,
+            None => std::process::exit(2),
+        };
+        //         let (root, mut rest) = (tree.1, tree.2.unwrap());
+        //         rest.insert(0, root);
+
+        //         let uuid = Uuid::new_v4();
+        // root_noderest_nodes
+        //         // ITERTOOLS
+        //         let hashmap_group =
+        //             rest.iter().enumerate().map(|(k, v)| (k as u64, (uuid, v))).into_group_map();
+        //         dbg!(hashmap_group);
+
+        Ok(())
+    }
+
+    #[derive(Debug)]
+    struct PrimitiveNodeVec {
+        vec: Vec<String>,
+    }
+
+    impl PrimitiveNodeVec {
+        fn new(vec: Vec<String>) -> Self {
+            Self { vec }
+        }
+
+        fn multi_select(&mut self) {
+            let defaults: Vec<bool> = Vec::with_capacity(self.vec.len()); // all false OR not selected.
+            let selections = MultiSelect::with_theme(&ColorfulTheme::default())
+                .with_prompt("Pick your food")
+                .items(&self.vec[..])
+                .defaults(&defaults[..])
+                .interact()
+                .unwrap();
+
+            if selections.is_empty() {
+                println!("You did not select anything :(");
+            } else {
+                println!("You selected these things:");
+                for selection in selections {
+                    println!("  {}", self.vec[selection]);
+                }
+            }
+        }
+
+        // ["root", "left", "right"]
+        // [0 , 1, 2]
+        // Just use HashMap?
+        fn sort(&mut self) {
+            let idx: Vec<usize> = Vec::with_capacity(self.vec.len());
+            dbg!(&idx);
+            let sorted_idx: Vec<usize> = Sort::with_theme(&ColorfulTheme::default())
+                .with_prompt("Order your foods by preference")
+                .items(&self.vec[..])
+                .interact()
+                .unwrap();
+            dbg!(&sorted_idx);
+
+            // println!("Your favorite item:");
+            // println!("  {}", self.vec[sorted[0]]);
+            // println!("Your least favorite item:");
+            // println!("  {}", self.vec[sorted[sorted.len() - 1]]);
+        }
+    }
+}
+mod trash_draft {
+
+    // nodes from hashmap
+    // let mut node = PrimitiveNode { node: rest[0].clone(), index: 0 };
+    // let nodes: Vec<PrimitiveNode> = rest .iter() .enumerate() .map(|(index, node)| PrimitiveNode
+    // { node: node.clone(), index }) .collect(); let mut map = HashMap::new();
+    // for node in nodes { map.insert(node.node, node.index); }
+    // let node_map = PrimitiveNodeMap(map);
+
+    // values
+    // let mut nodes = PrimitiveNodeVec::new(rest);
+    // nodes.multi_select();
+    // nodes.sort();
+    /* //  (PrimitiveNode::new("Einar", "Norway"), 25),
+    //  (Viking::new("Olaf", "Denmark"), 24),
+    //  (Viking::new("Harald", "Iceland"), 12),
+    #[derive(Hash, Eq, PartialEq, Debug)]
+    struct PrimitiveNode {
+        node: String,
+        index: usize,
+    }
+
+    // To make something the key of a HashMap, you need to satisfy 3 traits:
+    // Hash — How do you calculate a hash value for the type?
+    // PartialEq — How do you decide if two instances of a type are the same?
+    // Eq — Can you guarantee that the equality is reflexive, symmetric, and transitive? This requires
+    // PartialEq. This is based on the definition of HashMap:
+    // #[derive(Hash, Eq, PartialEq, Debug)]
+    #[derive(Debug)]
+    struct PrimitiveNodeMap<T, U>(HashMap<T, U>);
+
+    impl<T, U> Eq for PrimitiveNodeMap<T, U>
+    where
+        T: std::cmp::Eq + std::hash::Hash,
+        U: std::cmp::PartialEq + std::hash::Hash,
+    {
+        fn assert_receiver_is_total_eq(&self) {}
+    }
+
+    impl<T, U> PartialEq for PrimitiveNodeMap<T, U>
+    where
+        T: std::cmp::Eq + std::hash::Hash,
+        U: std::cmp::PartialEq + std::hash::Hash,
+    {
+        fn eq(&self, other: &Self) -> bool {
+            self.0 == other.0
+        }
+    } */
+
+    // impl<T, U> std::hash::Hash for PrimitiveNodeMap<T, U> { fn hash<H>(&self, state: &mut H)
+    // where H: ~const Hasher, { self.map.hash(state); } }
+    // struct Wrapper<T>(HashSet<T>);
+    // struct Wrapper<T, U>(HashMap<T, U>);
+    //
+    // pub fn init_dialogue_config() -> Result<Option<DialogueConfig>, Box<dyn Error>> {
+    //     const ROOT_IDX: u32 = 0;
+    //     let theme =
+    //         ColorfulTheme { values_style: Style::new().yellow().dim(), ..ColorfulTheme::default()
+    // };     println!("Welcome to the binary tree setup wizard");
+
+    //     let total_nodes: u32 =
+    //         Input::with_theme(&theme).with_prompt("total_nodes").default(3).interact()?;
+
+    //     let uuid_root: Uuid = Uuid::new_v4();
+    //     let root_node = Input::with_theme(&theme)
+    //         .with_prompt("root_node")
+    //         .default(parse_default_node(ChildPatUuid {
+    //             child: "root",
+    //             pat: Some('-'),
+    //             uuid: uuid_root,
+    //         })?)
+    //         .interact()?;
+
+    //     let mut children: Vec<DialogueNode> = Vec::new();
+
+    //     for i in 1..total_nodes {
+    //         let display_prev: &String = match i {
+    //             1 => &root_node,
+    //             _ => &children[i as usize - 2].node,
+    //         };
+
+    //         let uuid = Uuid::new_v4();
+
+    //         if let true = i % 2 != 0 {
+    //             let child_node = Input::with_theme(&theme)
+    //                 .with_prompt(format!(
+    //                     ".\nroot: {}\nrest: {:?}\nEnter left_node: ",
+    //                     root_node, display_prev
+    //                 ))
+    //                 .default(parse_default_node(ChildPatUuid { child: "left", pat: Some('-'),
+    // uuid })?)                 .interact()?;
+    //             children.push(DialogueNode { index: i, uuid: uuid.to_string(), node: child_node
+    // });         } else {
+    //             let child_node = Input::with_theme(&theme)
+    //                 .with_prompt(format!(
+    //                     ".\nroot: {}\nrest: {:?}\nEnter right_node: ",
+    //                     root_node, display_prev
+    //                 ))
+    //                 .default(parse_default_node(ChildPatUuid { child: "right", pat: Some('-'),
+    // uuid })?)                 .interact()?;
+    //             children.push(DialogueNode { index: i, uuid: uuid.to_string(), node: child_node
+    // });         }
+    //     }
+
+    //     // if !Confirm::with_theme(&theme).with_prompt("Add more?").interact()? { return
+    // Ok(None); }     if !Confirm::with_theme(&theme).with_prompt("Save
+    // progress").default(true).interact()? {         return Ok(None);
+    //     }
+
+    //     let config = DialogueConfig {
+    //         total_nodes,
+    //         root_node: DialogueNode { index: ROOT_IDX, uuid: uuid_root.to_string(), node:
+    // root_node },         rest_nodes: Some(children),
+    //     };
+
+    //     //PERF: Use tempfile?
+    //     let mut file = File::create(*CONFIG_FILE_PATH)?;
+    //     serde_json::to_writer(&mut file, &config)?;
+
+    //     Ok(Some(config))
     // }
-    if !Confirm::with_theme(&theme).with_prompt("Save progress").interact()? {
-        return Ok(None);
-    }
-
-    let rest_nodes = Some(children);
-    Ok(Some(DialogueConfig { total_node: total_nodes, root_node, rest_nodes }))
-}
-
-#[derive(Debug)]
-#[allow(dead_code)]
-pub struct Config {
-    interface: IpAddr,
-    hostname: String,
-    use_acme: bool,
-    private_key: Option<String>,
-    cert: Option<String>,
-}
-
-pub fn init_config() -> Result<Option<Config>, Box<dyn Error>> {
-    let theme =
-        ColorfulTheme { values_style: Style::new().yellow().dim(), ..ColorfulTheme::default() };
-    println!("Welcome to the setup wizard");
-
-    if !Confirm::with_theme(&theme).with_prompt("Do you want to continue?").interact()? {
-        return Ok(None);
-    }
-
-    let interface = Input::with_theme(&theme)
-        .with_prompt("Interface")
-        .default("127.0.0.1".parse().unwrap())
-        .interact()?;
-
-    let hostname = Input::with_theme(&theme).with_prompt("Hostname").interact()?;
-
-    let tls = Select::with_theme(&theme)
-        .with_prompt("Configure TLS")
-        .default(0)
-        .item("automatic with ACME")
-        .item("manual")
-        .item("no")
-        .interact()?;
-
-    let (private_key, cert, use_acme) = match tls {
-        0 => (Some("acme.pkey".into()), Some("acme.cert".into()), true),
-        1 => (
-            Some(Input::with_theme(&theme).with_prompt("  Path to private key").interact()?),
-            Some(Input::with_theme(&theme).with_prompt("  Path to certificate").interact()?),
-            false,
-        ),
-        _ => (None, None, false),
-    };
-
-    Ok(Some(Config { hostname, interface, private_key, cert, use_acme }))
 }

@@ -180,6 +180,7 @@ dependencies = [
  "heck",
  "itertools",
  "just",
+ "lazy_static",
  "libc",
  "log",
  "pretty_assertions",
