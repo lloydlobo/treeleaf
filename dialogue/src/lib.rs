@@ -2,9 +2,87 @@ mod binary_tree;
 use std::{error::Error, net::IpAddr};
 
 use console::Style;
-use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
+use dialoguer::{theme::ColorfulTheme, Confirm, Input, MultiSelect, Select, Sort};
 
 pub use crate::binary_tree::BinaryTree;
+
+pub fn run() -> Result<(), Box<dyn Error>> {
+    let tree: Option<DialogueConfig> = match init_dialogue_config() {
+        Ok(None) => {
+            println!("Aborted.");
+            None
+        }
+        Ok(Some(config)) => {
+            println!("{:#?}", config);
+            Some(config)
+        }
+        Err(err) => {
+            println!("error: {}", err);
+            None
+        }
+    };
+
+    let tree: DialogueConfig = match tree {
+        Some(v) => v,
+        None => std::process::exit(2),
+    };
+    let (root, mut rest) = (tree.root_node, tree.rest_nodes.unwrap());
+    rest.insert(0, root);
+
+    let mut values = Values::new(rest);
+    values.multi_select();
+    values.sort();
+    Ok(())
+}
+
+#[derive(Debug)]
+struct Values {
+    vec: Vec<String>,
+}
+
+impl Values {
+    fn new(vec: Vec<String>) -> Self {
+        Self { vec }
+    }
+
+    fn multi_select(&mut self) {
+        let defaults: Vec<bool> = Vec::with_capacity(self.vec.len()); // all false OR not selected.
+        let selections = MultiSelect::with_theme(&ColorfulTheme::default())
+            .with_prompt("Pick your food")
+            .items(&self.vec[..])
+            .defaults(&defaults[..])
+            .interact()
+            .unwrap();
+
+        if selections.is_empty() {
+            println!("You did not select anything :(");
+        } else {
+            println!("You selected these things:");
+            for selection in selections {
+                println!("  {}", self.vec[selection]);
+            }
+        }
+    }
+
+    // ["root", "left", "right"]
+    // [0 , 1, 2]
+    // Just use HashMap?
+    fn sort(&mut self) {
+        let idx: Vec<usize> = Vec::with_capacity(self.vec.len());
+        dbg!(&idx);
+        let sorted_idx: Vec<usize> = Sort::with_theme(&ColorfulTheme::default())
+            .with_prompt("Order your foods by preference")
+            .items(&self.vec[..])
+            .interact()
+            .unwrap();
+        dbg!(&sorted_idx);
+
+        // println!("Your favorite item:");
+        // println!("  {}", self.vec[sorted[0]]);
+        // println!("Your least favorite item:");
+        // println!("  {}", self.vec[sorted[sorted.len() - 1]]);
+    }
+}
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -59,7 +137,7 @@ Enter right_node: "#,
             }
         }
     }
-    // if !Confirm::with_theme(&theme).with_prompt("Add more").interact()? {
+    // if !Confirm::with_theme(&theme).with_prompt("Add more child_nodes").interact()? {
     //     return Ok(None);
     // }
     if !Confirm::with_theme(&theme).with_prompt("Save progress").interact()? {

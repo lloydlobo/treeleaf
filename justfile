@@ -7,6 +7,8 @@ alias t := test
 
 alias c := check
 
+alias r := run
+
 bt := '0'
 
 export RUST_BACKTRACE := bt
