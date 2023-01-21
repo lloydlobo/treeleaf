@@ -19,10 +19,6 @@ pub fn init_dialogue_config() -> Result<Option<DialogueConfig>, Box<dyn Error>> 
         ColorfulTheme { values_style: Style::new().yellow().dim(), ..ColorfulTheme::default() };
     println!("Welcome to the binary tree setup wizard");
 
-    if !Confirm::with_theme(&theme).with_prompt("Do you want to continue?").interact()? {
-        return Ok(None);
-    }
-
     let total_nodes: u32 =
         Input::with_theme(&theme).with_prompt("total_nodes").default(3).interact()?;
 
@@ -62,6 +58,12 @@ Enter right_node: "#,
                 children.push(child_node);
             }
         }
+    }
+    // if !Confirm::with_theme(&theme).with_prompt("Add more").interact()? {
+    //     return Ok(None);
+    // }
+    if !Confirm::with_theme(&theme).with_prompt("Save progress").interact()? {
+        return Ok(None);
     }
 
     let rest_nodes = Some(children);
