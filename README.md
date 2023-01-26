@@ -27,15 +27,11 @@ NOTE: Only binary tree-like diagrams available for now.
 
 ### `tree` emulation for your docs
 
-```shell
-mkdir -p foo/bar/baz
-touch foo/foo.md foo/bar/foobar.md foo/bar/baz/foobarbaz.md
-./treeleaf foo
-```
+```bash
+$ mkdir -p foo/bar/baz
+$ touch foo/foo.md foo/bar/foobar.md foo/bar/baz/foobarbaz.md
+$ ./treeleaf foo
 
-Output:
-
-```shell
 foo
 ├── foo.md
 └── bar
