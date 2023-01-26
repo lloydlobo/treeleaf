@@ -1,6 +1,6 @@
 # treeleaf
 
-[![CICD](https://github.com/lloydlobo/treeleaf/actions/workflows/CICD.yml/badge.svg)](https://github.com/lloydlobo/treeleaf/actions/workflows/CICD.yml)
+[![ci rust](https://github.com/lloydlobo/treeleaf/actions/workflows/rust.yml/badge.svg)](https://github.com/lloydlobo/treeleaf/actions/workflows/rust.yml)
 [![Version info](https://img.shields.io/crates/v/trealeaf.svg)](https://crates.io/crates/trealeaf)
 
 > Tree diagrams for the teriminal.
