@@ -1,4 +1,4 @@
-use dialogue::*;
+use treeleaf::run;
 
 fn main() {
     match run() {

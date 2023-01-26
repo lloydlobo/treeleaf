@@ -1,2 +1,64 @@
-[workspace]
-members = ["dialogue"]
+[package]
+name = "treeleaf"
+version = "0.1.0"
+description = """
+Mermaid diagrams for the teriminal. 
+Visualize tree-like data on the command-line
+""""
+categories = ["command-line-interface", "visualization"]
+keywords = ["cli", "tree", "mermaid"]
+# license = "MIT"
+edition = "2021"
+include = [
+  "src/**/*",
+  "Cargo.toml",
+  # "LICENSE*",
+  "README.md",
+  "examples/**/*"
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ansi_term = "0.12.1"
+atty = "0.2.14"
+camino = "1.1.2"
+console = "0.15.5"
+ctrlc = { version = "3.2.4", features = ["termination"] }
+derivative = "2.2.0"
+dialoguer = "0.10.3"
+edit-distance = "2.1.0"
+heck = "0.4.0"
+itertools = "0.10.5"
+just = "1.12.0"
+lazy_static = "1.4.0"
+libc = "0.2.139"
+log = "0.4.17"
+regex = "1.7.1"
+serde = { version = "1.0.152", features = ["derive", "rc"] }
+serde_json = "1.0.91"
+sha2 = "0.10.6"
+similar = { version = "2.2.1", features = ["unicode"] }
+snafu = "0.7.4"
+strum = { version = "0.24.1", features = ["derive"] }
+tempfile = "3.3.0"
+unicode-width = "0.1.10"
+uuid = { version = "1.2.2", features = ["v4"] }
+
+
+[dev-dependencies]
+cradle = "0.2.0"
+executable-path = "1.0.0"
+pretty_assertions = "1.0.0"
+proptest = "1.0.0"
+quickcheck = "1.0.3"
+temptree = "0.2.0"
+which = "4.0.0"
+yaml-rust = "0.4.5"
+
+[profile.release]
+lto = true
+
+[[test]]
+name = "integration"
+path = "tests/lib.rs"

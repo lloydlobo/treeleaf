@@ -11,8 +11,7 @@ use serde::{Deserialize, Serialize};
 ///         "right": { "value": "E", "left": null, "right": null }
 ///     },
 ///     "right": {
-///         "value": "C",
-///         "left": { "value": "F", "left": null, "right": null },
+///         "value": "C", "left": { "value": "F", "left": null, "right": null },
 ///         "right": { "value": "G", "left": null, "right": null }
 ///     }
 /// }

@@ -1,25 +1,77 @@
-// #![allow(unused)]
-#![feature(const_trait_impl)]
+mod binary_tree;
+mod term_tree;
+#[cfg(test)]
+mod tests;
+
+// ---------------------------------------------------------
 
 #[macro_use]
 extern crate lazy_static;
 
-mod binary_tree;
-use std::{error::Error, fs::File};
+use std::{error::Error, fs::File, path::Path, thread, time::Duration};
 
 use console::Style;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub use crate::{binary_tree::BinaryTree, term_tree::*};
+
+// ---------------------------------------------------------
+
 lazy_static! {
     static ref THEME: ColorfulTheme = ColorfulTheme::default();
     static ref CONFIG_FILE_PATH: &'static str = "config.json";
 }
 
-pub use crate::binary_tree::BinaryTree;
+// ---------------------------------------------------------
+
+pub fn tree<P>(p: P) -> std::io::Result<Tree<String>>
+where
+    P: AsRef<Path> + std::fmt::Debug,
+{
+    println!("Path to file: {:?}", p);
+
+    // render tree with leaves
+    let tree = Tree::new("foo".to_string()).with_leaves(
+        // new nodes
+        [Tree::new("bar".to_string()).with_leaves(
+            // new nodes
+            ["baz".to_string()],
+        )],
+    );
+    println!("{}", format!("{}", tree));
+    // render tree with multiple leaves
+    let tree = Tree::new("foo".to_string()).with_leaves(
+        // new nodes
+        ["bar".to_string(), "baz".to_string()],
+    );
+    println!("{}", format!("{}", tree));
+    // render tree with multiline leaves
+    let tree = Tree::new("foo".to_string()).with_leaves([
+        // new nodes
+        Tree::new("bar\nbaz".to_string()).with_multiline(Multiline::True),
+        Tree::new("foo\nbar".to_string()).with_multiline(Multiline::True),
+    ]);
+    println!("{}", format!("{}", tree));
+
+    Ok(tree)
+}
+
+// ---------------------------------------------------------
 
 pub fn run() -> Result<(), Box<dyn Error>> {
+    {
+        treeroot::run();
+        thread::sleep(Duration::from_millis(10000));
+    }
+    {
+        let path = Path::new("tree.json"); // cli.path OR DialogueConfig.path
+        let tree_str = tree(path)?;
+        let _tree_str = format!("{}", tree_str);
+        thread::sleep(Duration::from_millis(10000));
+    }
+
     let dialogue_cfg: Option<DialogueConfig> =
         match DialogueConfig::default().init_dialogue_config() {
             Ok(None) => {
@@ -57,6 +109,64 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// ---------------------------------------------------------
+
+mod treeroot {
+
+    use std::{
+        fs::{self, DirEntry, Metadata},
+        path::Path,
+    };
+
+    use crate::Tree;
+
+    /// Returns the final component of the `Path`, if there is one.
+    ///
+    /// If the path is a normal file, this is the file name. If it's the path of a directory, this
+    /// is the directory name.
+    ///
+    /// Returns [`None`] if the path terminates in `..`.
+    fn label<P>(path: P) -> String
+    where
+        P: AsRef<Path>,
+    {
+        path.as_ref().file_name().unwrap().to_str().unwrap().to_owned()
+    }
+
+    // * `fold()` - fn fold<Acc, Fold>(self, init: Acc, fold: Fold) -> Acc
+    // * `canonicalize` - Returns the canonical, absolute form of the path with all intermediate
+    //   components normalized and symbolic links resolved.
+    // * `metadata` - Returns the metadata for the file that this entry points at.
+    fn tree<P>(path: P) -> std::io::Result<Tree<String>>
+    where
+        P: AsRef<Path>,
+    {
+        let result = fs::read_dir(&path)?.filter_map(|e| e.ok()).fold(
+            Tree::new(label(path.as_ref().canonicalize()?)),
+            |mut root: Tree<String>, entry: DirEntry| {
+                let dir: Metadata = entry.metadata().unwrap();
+                if dir.is_dir() {
+                    root.push(tree(entry.path()).unwrap());
+                } else {
+                    root.push(Tree::new(label(entry.path())));
+                }
+                root
+            },
+        );
+        Ok(result)
+    }
+
+    pub fn run() {
+        let dir: String = std::env::args().nth(1).unwrap_or_else(|| String::from("."));
+        match tree(dir) {
+            Ok(tree) => println!("{}", tree),
+            Err(e) => eprintln!("error: {}", e),
+        }
+    }
+}
+
+// ---------------------------------------------------------
+
 enum Nodes {
     Root,
     Child,
@@ -80,6 +190,8 @@ struct ChildUuid<'a> {
     child: String,
     uuid: ChildPatUuid<'a>,
 }
+
+// ---------------------------------------------------------
 
 /// ```json
 /// {
@@ -212,6 +324,8 @@ impl DialogueConfig {
     }
 }
 
+// ---------------------------------------------------------
+
 #[allow(unused)]
 mod draft {
     use std::error::Error;
@@ -289,125 +403,64 @@ mod draft {
         }
     }
 }
-mod trash_draft {
 
-    // nodes from hashmap
-    // let mut node = PrimitiveNode { node: rest[0].clone(), index: 0 };
-    // let nodes: Vec<PrimitiveNode> = rest .iter() .enumerate() .map(|(index, node)| PrimitiveNode
-    // { node: node.clone(), index }) .collect(); let mut map = HashMap::new();
-    // for node in nodes { map.insert(node.node, node.index); }
-    // let node_map = PrimitiveNodeMap(map);
-
-    // values
-    // let mut nodes = PrimitiveNodeVec::new(rest);
-    // nodes.multi_select();
-    // nodes.sort();
-    /* //  (PrimitiveNode::new("Einar", "Norway"), 25),
-    //  (Viking::new("Olaf", "Denmark"), 24),
-    //  (Viking::new("Harald", "Iceland"), 12),
-    #[derive(Hash, Eq, PartialEq, Debug)]
-    struct PrimitiveNode {
-        node: String,
-        index: usize,
-    }
-
-    // To make something the key of a HashMap, you need to satisfy 3 traits:
-    // Hash — How do you calculate a hash value for the type?
-    // PartialEq — How do you decide if two instances of a type are the same?
-    // Eq — Can you guarantee that the equality is reflexive, symmetric, and transitive? This requires
-    // PartialEq. This is based on the definition of HashMap:
-    // #[derive(Hash, Eq, PartialEq, Debug)]
-    #[derive(Debug)]
-    struct PrimitiveNodeMap<T, U>(HashMap<T, U>);
-
-    impl<T, U> Eq for PrimitiveNodeMap<T, U>
-    where
-        T: std::cmp::Eq + std::hash::Hash,
-        U: std::cmp::PartialEq + std::hash::Hash,
-    {
-        fn assert_receiver_is_total_eq(&self) {}
-    }
-
-    impl<T, U> PartialEq for PrimitiveNodeMap<T, U>
-    where
-        T: std::cmp::Eq + std::hash::Hash,
-        U: std::cmp::PartialEq + std::hash::Hash,
-    {
-        fn eq(&self, other: &Self) -> bool {
-            self.0 == other.0
-        }
-    } */
-
-    // impl<T, U> std::hash::Hash for PrimitiveNodeMap<T, U> { fn hash<H>(&self, state: &mut H)
-    // where H: ~const Hasher, { self.map.hash(state); } }
-    // struct Wrapper<T>(HashSet<T>);
-    // struct Wrapper<T, U>(HashMap<T, U>);
-    //
-    // pub fn init_dialogue_config() -> Result<Option<DialogueConfig>, Box<dyn Error>> {
-    //     const ROOT_IDX: u32 = 0;
-    //     let theme =
-    //         ColorfulTheme { values_style: Style::new().yellow().dim(), ..ColorfulTheme::default()
-    // };     println!("Welcome to the binary tree setup wizard");
-
-    //     let total_nodes: u32 =
-    //         Input::with_theme(&theme).with_prompt("total_nodes").default(3).interact()?;
-
-    //     let uuid_root: Uuid = Uuid::new_v4();
-    //     let root_node = Input::with_theme(&theme)
-    //         .with_prompt("root_node")
-    //         .default(parse_default_node(ChildPatUuid {
-    //             child: "root",
-    //             pat: Some('-'),
-    //             uuid: uuid_root,
-    //         })?)
-    //         .interact()?;
-
-    //     let mut children: Vec<DialogueNode> = Vec::new();
-
-    //     for i in 1..total_nodes {
-    //         let display_prev: &String = match i {
-    //             1 => &root_node,
-    //             _ => &children[i as usize - 2].node,
-    //         };
-
-    //         let uuid = Uuid::new_v4();
-
-    //         if let true = i % 2 != 0 {
-    //             let child_node = Input::with_theme(&theme)
-    //                 .with_prompt(format!(
-    //                     ".\nroot: {}\nrest: {:?}\nEnter left_node: ",
-    //                     root_node, display_prev
-    //                 ))
-    //                 .default(parse_default_node(ChildPatUuid { child: "left", pat: Some('-'),
-    // uuid })?)                 .interact()?;
-    //             children.push(DialogueNode { index: i, uuid: uuid.to_string(), node: child_node
-    // });         } else {
-    //             let child_node = Input::with_theme(&theme)
-    //                 .with_prompt(format!(
-    //                     ".\nroot: {}\nrest: {:?}\nEnter right_node: ",
-    //                     root_node, display_prev
-    //                 ))
-    //                 .default(parse_default_node(ChildPatUuid { child: "right", pat: Some('-'),
-    // uuid })?)                 .interact()?;
-    //             children.push(DialogueNode { index: i, uuid: uuid.to_string(), node: child_node
-    // });         }
-    //     }
-
-    //     // if !Confirm::with_theme(&theme).with_prompt("Add more?").interact()? { return
-    // Ok(None); }     if !Confirm::with_theme(&theme).with_prompt("Save
-    // progress").default(true).interact()? {         return Ok(None);
-    //     }
-
-    //     let config = DialogueConfig {
-    //         total_nodes,
-    //         root_node: DialogueNode { index: ROOT_IDX, uuid: uuid_root.to_string(), node:
-    // root_node },         rest_nodes: Some(children),
-    //     };
-
-    //     //PERF: Use tempfile?
-    //     let mut file = File::create(*CONFIG_FILE_PATH)?;
-    //     serde_json::to_writer(&mut file, &config)?;
-
-    //     Ok(Some(config))
-    // }
-}
+/*
+ * ANAGRAMS
+ * =======
+ * mermaid
+ * readme
+ * diagram
+ * tree
+ * terminal
+ * cli
+ *
+ * treelike
+ * doctree
+ * termaidoc
+ * treeviz
+ * mermaidoc
+ * readiagram
+ *
+ * thoughtree
+ * mdtree
+ * doctree
+ * vizdoc
+ * docviz
+ * imermaid
+ * tree-like
+ * treelist
+ * linkediagram
+ * linkertree
+ * treelinker
+ * ladders
+ * lizter
+ * leaflist
+ * treeleaf
+ *
+ * md
+ * markdown
+ * term
+ * cli
+ * diag
+ * gram
+ * read
+ * maid
+ * merm
+ * doc
+ *
+ * doctermaid
+ * mermaidocgram
+ *
+ * serializedeserialize
+ * ser      de
+ * linkerterminaltreediagrams
+ * li    ter          d    a
+ *
+ * treeleaves
+ * leaf
+ * leaves
+ * leaf
+ * display
+ * treeleaf
+ *
+ */
