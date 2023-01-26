@@ -412,9 +412,9 @@ checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
 
 [[package]]
 name = "just"
-version = "1.12.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ceb07f3904f2320d8b75c79110753a8ac85cb50b813b793330a1659ad054f261"
+checksum = "1988b5c252da0c41a7b9d18ad1a35bfadd20d6a7d27a5f4fb15ebd99f1142732"
 dependencies = [
  "ansi_term",
  "atty",
