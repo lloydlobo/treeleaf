@@ -60,7 +60,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use dialogue::*;
+    /// use treeleaf::*;
     ///
     /// fn main() {
     ///     let mut tree = BinaryTree::new(1);
