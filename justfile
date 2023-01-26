@@ -12,7 +12,7 @@ default:
 #
 
 docker_image := "treeleaf"
-docker_container_name := 'treeleaf'
+docker_container_name := 'treeleaf1'
 username := 'lloydlobo'
 
 alias t := test
@@ -277,3 +277,15 @@ docker-logs:
 docker-stop:
   docker stop {{docker_container_name}}
 
+
+#
+# RELEASE
+#
+
+# tags the image with a docker tag
+docker-tag-latest:
+  docker tag {{docker_image}} {{username}}/{{docker_image}}
+
+# pushes to hub with default tag `latest` if not specified
+docker-push:
+  docker push {{username}}/{{docker_image}}

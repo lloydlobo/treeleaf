@@ -25,6 +25,33 @@ NOTE: Only binary tree-like diagrams available for now.
 
 ## Usage
 
+### `tree` emulation for your docs
+
+```shell
+mkdir -p foo/bar/baz
+touch foo/foo.md foo/bar/foobar.md foo/bar/baz/foobarbaz.md
+./treeleaf foo
+```
+
+Output:
+
+```shell
+foo
+├── foo.md
+└── bar
+    ├── baz
+    │   └── foobarbaz.md
+    └── foobar.md
+```
+
+### Docker
+
+#### Docker Pull Command
+
+```shell
+docker pull lloydlobo/treeleaf
+```
+
 ### Example
 
 An example program is provided under the "examples" directory to mimic the `tree(1)`
